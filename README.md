@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lector de Facturas
 
-## Getting Started
+Sistema multi-hotel que lee facturas con IA y genera la planilla Excel para
+importar al ERP **GCI**. Producto SaaS en construcción por Santi + Vale.
 
-First, run the development server:
+URL pública: <https://lector-facturas-five.vercel.app/>
 
-```bash
+## Stack
+
+- **Next.js 16** (App Router, Server Components, Server Actions, Turbopack)
+- **TypeScript** + **Tailwind CSS**
+- **Supabase** (Postgres + Auth + RLS)
+- **Gemini API** (`gemini-2.5-flash`) para lectura de facturas
+- **Vercel** para hosting (auto-deploy desde GitHub)
+
+## Setup en una compu nueva
+
+Solo se necesita **Node** y **Git** ya instalados.
+
+```powershell
+git clone https://github.com/lectordefacturas/lector-facturas.git
+cd lector-facturas
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrir <http://localhost:3000>. El archivo `.env.local` ya está en el repo
+(decisión consciente, ver [docs/contexto/README.md](docs/contexto/README.md)).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Estructura
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── proxy.ts                   # Refresca sesión de Supabase en cada request
+├── lib/
+│   ├── supabase/              # Clientes server/client/middleware de Supabase SSR
+│   └── gemini.ts              # Cliente REST de Gemini para leer facturas
+└── app/
+    ├── page.tsx               # Home: catálogo del hotel del usuario logueado
+    ├── login/                 # Formulario de login (email + password)
+    └── factura/nueva/         # Subir factura → Gemini → tabla de líneas
 
-## Learn More
+docs/contexto/                 # Memorias del proyecto para Claude (multi-compu)
+prototipo-original/            # Prototipo viejo de Vale, gitignored (datos sensibles)
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Continuar trabajando con Claude
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Al abrir Claude Code en este proyecto desde cualquier compu, decirle al inicio:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> "Leé los archivos de `docs/contexto/` para retomar el contexto del proyecto.
+> Empezá por `MEMORY.md`."

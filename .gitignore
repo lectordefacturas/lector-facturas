@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# Excepción: .env.local SÍ se versiona porque trabajamos entre dos compus.
+# Si el repo se hace público o se suma alguien externo, sacar este archivo
+# del repo (git rm --cached .env.local) y rotar las keys.
+!.env.local
 
 # vercel
 .vercel
