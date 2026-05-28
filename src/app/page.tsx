@@ -39,11 +39,19 @@ export default async function Home() {
             </p>
           </div>
           {user ? (
-            <form action={logout}>
-              <button className="text-sm border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900 px-3 py-1.5 rounded">
-                Cerrar sesión
-              </button>
-            </form>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/factura/nueva"
+                className="text-sm bg-black dark:bg-white text-white dark:text-black px-3 py-1.5 rounded hover:opacity-90"
+              >
+                Subir factura
+              </Link>
+              <form action={logout}>
+                <button className="text-sm border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900 px-3 py-1.5 rounded">
+                  Cerrar sesión
+                </button>
+              </form>
+            </div>
           ) : (
             <Link
               href="/login"
