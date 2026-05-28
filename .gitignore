@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# prototipo viejo - solo referencia local, NUNCA subir
+# (contiene api_key.txt, facturas reales, planillas internas)
+/prototipo-original/
