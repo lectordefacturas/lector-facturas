@@ -1,6 +1,14 @@
-import { supabase } from "@/lib/supabase";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { logout } from "./login/actions";
 
 export default async function Home() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { data: articulos, error } = await supabase
     .from("articulos")
     .select("id, codigo_gci, nombre, unidad, es_fruver");
@@ -8,15 +16,40 @@ export default async function Home() {
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-black p-8 font-sans">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-semibold text-black dark:text-zinc-50 mb-2">
-          Catálogo Cala di Volpe
-        </h1>
-        <p className="text-zinc-600 dark:text-zinc-400 mb-8">
-          Prueba de conexión con Supabase (Ladrillo 2 · sub-paso 5)
-        </p>
+        <div className="flex justify-between items-start mb-2 gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
+              Catálogo Cala di Volpe
+            </h1>
+            <p className="text-zinc-600 dark:text-zinc-400 mt-1">
+              {user ? (
+                <>
+                  Logueado como{" "}
+                  <span className="font-medium">{user.email}</span>
+                </>
+              ) : (
+                "Sin sesión activa"
+              )}
+            </p>
+          </div>
+          {user ? (
+            <form action={logout}>
+              <button className="text-sm border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900 px-3 py-1.5 rounded">
+                Cerrar sesión
+              </button>
+            </form>
+          ) : (
+            <Link
+              href="/login"
+              className="text-sm bg-black dark:bg-white text-white dark:text-black px-3 py-1.5 rounded hover:opacity-90"
+            >
+              Ingresar
+            </Link>
+          )}
+        </div>
 
         {error ? (
-          <div className="rounded-lg border border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800 p-4">
+          <div className="mt-8 rounded-lg border border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800 p-4">
             <p className="font-medium text-red-900 dark:text-red-200">
               Error al conectar con Supabase
             </p>
@@ -25,7 +58,7 @@ export default async function Home() {
             </pre>
           </div>
         ) : (
-          <div className="rounded-lg border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+          <div className="mt-8 rounded-lg border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
             <p className="text-zinc-900 dark:text-zinc-100 mb-4">
               <span className="font-semibold">Artículos visibles:</span>{" "}
               {articulos?.length ?? 0}
@@ -33,10 +66,9 @@ export default async function Home() {
 
             {articulos && articulos.length === 0 ? (
               <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                ✅ Conexión OK. La lista está vacía porque todavía no hay login
-                — RLS está bloqueando la lectura, que es exactamente lo que
-                queremos. En el próximo sub-paso agregamos autenticación y van
-                a aparecer los artículos de Cala di Volpe.
+                {user
+                  ? "No tenés artículos visibles. Probablemente todavía no estás vinculado a ningún hotel en la tabla miembros_hotel."
+                  : "Sin sesión activa, RLS bloquea la lectura. Ingresá con un usuario vinculado a Cala di Volpe para ver los artículos."}
               </p>
             ) : (
               <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
