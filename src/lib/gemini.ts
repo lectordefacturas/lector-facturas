@@ -69,7 +69,7 @@ export async function leerFactura(
     ],
     generationConfig: {
       temperature: 0.1,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 8192,
       responseMimeType: "application/json",
       responseSchema: RESPONSE_SCHEMA,
     },
@@ -87,10 +87,24 @@ export async function leerFactura(
   }
 
   const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const candidate = data?.candidates?.[0];
+  const text = candidate?.content?.parts?.[0]?.text;
+  const finishReason = candidate?.finishReason;
+
   if (!text) {
-    throw new Error("Respuesta inesperada de Gemini (sin texto)");
+    throw new Error(
+      `Respuesta inesperada de Gemini (sin texto, finishReason=${finishReason})`
+    );
   }
 
-  return JSON.parse(text) as FacturaExtraida;
+  try {
+    return JSON.parse(text) as FacturaExtraida;
+  } catch (err) {
+    const cortado = finishReason && finishReason !== "STOP";
+    const motivo = cortado
+      ? `Gemini cortó la respuesta antes de terminar (finishReason=${finishReason}). Probá con una imagen más chica o con menos líneas.`
+      : `No se pudo parsear el JSON devuelto por Gemini.`;
+    const detalle = err instanceof Error ? err.message : "error desconocido";
+    throw new Error(`${motivo} Detalle: ${detalle}`);
+  }
 }

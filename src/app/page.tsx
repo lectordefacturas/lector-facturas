@@ -15,9 +15,18 @@ export default async function Home() {
     .limit(1);
   const hotelNombre = hoteles?.[0]?.nombre ?? null;
 
-  const { data: articulos, error } = await supabase
+  const VISIBLES = 50;
+  const { count: total, error: errorTotal } = await supabase
     .from("articulos")
-    .select("id, codigo_gci, nombre, unidad, es_fruver");
+    .select("*", { count: "exact", head: true });
+
+  const { data: articulos, error: errorLista } = await supabase
+    .from("articulos")
+    .select("id, codigo_gci, nombre, unidad, es_fruver")
+    .order("nombre", { ascending: true })
+    .limit(VISIBLES);
+
+  const error = errorTotal ?? errorLista;
 
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-black p-8 font-sans">
@@ -73,10 +82,18 @@ export default async function Home() {
           </div>
         ) : (
           <div className="mt-8 rounded-lg border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
-            <p className="text-zinc-900 dark:text-zinc-100 mb-4">
-              <span className="font-semibold">Artículos visibles:</span>{" "}
-              {articulos?.length ?? 0}
+            <p className="text-zinc-900 dark:text-zinc-100 mb-1">
+              <span className="font-semibold">Artículos en catálogo:</span>{" "}
+              {total ?? 0}
             </p>
+            {total && total > VISIBLES ? (
+              <p className="text-sm text-zinc-500 mb-4">
+                Mostrando los primeros {VISIBLES} (orden alfabético). La
+                búsqueda y paginación llegan en un próximo paso.
+              </p>
+            ) : (
+              <div className="mb-4" />
+            )}
 
             {articulos && articulos.length === 0 ? (
               <p className="text-sm text-zinc-600 dark:text-zinc-400">
