@@ -13,14 +13,9 @@ export default async function LoginPage({
         action={login}
         className="w-full max-w-sm bg-white dark:bg-zinc-900 rounded-lg border border-zinc-300 dark:border-zinc-800 p-6 space-y-4"
       >
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-            Ingresar
-          </h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-            Lector de facturas — Cala di Volpe
-          </p>
-        </div>
+        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+          Ingresar
+        </h1>
 
         <div>
           <label

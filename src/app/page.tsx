@@ -9,6 +9,12 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const { data: hoteles } = await supabase
+    .from("hoteles")
+    .select("nombre")
+    .limit(1);
+  const hotelNombre = hoteles?.[0]?.nombre ?? null;
+
   const { data: articulos, error } = await supabase
     .from("articulos")
     .select("id, codigo_gci, nombre, unidad, es_fruver");
@@ -19,7 +25,7 @@ export default async function Home() {
         <div className="flex justify-between items-start mb-2 gap-4">
           <div>
             <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
-              Catálogo Cala di Volpe
+              {hotelNombre ? `Catálogo · ${hotelNombre}` : "Lector de facturas"}
             </h1>
             <p className="text-zinc-600 dark:text-zinc-400 mt-1">
               {user ? (
