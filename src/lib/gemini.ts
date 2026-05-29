@@ -75,15 +75,41 @@ export async function leerFactura(
     },
   };
 
-  const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  // Retry con backoff para errores transientes (503 modelo saturado, 429 rate limit).
+  const TRANSIENT_STATUSES = new Set([429, 503]);
+  const MAX_INTENTOS = 3;
+  let response: Response | null = null;
+  let ultimoError = "";
+  for (let intento = 1; intento <= MAX_INTENTOS; intento++) {
+    response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (response.ok) break;
+    ultimoError = await response.text();
+    if (!TRANSIENT_STATUSES.has(response.status) || intento === MAX_INTENTOS) {
+      break;
+    }
+    // Espera 2s, 4s entre reintentos.
+    const waitMs = 2000 * intento;
+    await new Promise((r) => setTimeout(r, waitMs));
+  }
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Gemini ${response.status}: ${errorBody}`);
+  if (!response || !response.ok) {
+    if (response && response.status === 503) {
+      throw new Error(
+        "Gemini está saturado momentáneamente. Esperá un minuto y volvé a intentar."
+      );
+    }
+    if (response && response.status === 429) {
+      throw new Error(
+        "Superaste el límite de uso de Gemini por ahora. Esperá unos minutos."
+      );
+    }
+    throw new Error(
+      `Gemini ${response?.status ?? "?"}: ${ultimoError.slice(0, 300)}`
+    );
   }
 
   const data = await response.json();

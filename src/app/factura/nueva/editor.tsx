@@ -7,6 +7,7 @@ import {
   procesarFactura,
   type ProcesarFacturaResult,
 } from "./actions";
+import { guardarFactura } from "./save-actions";
 import type { ArticuloCatalogo } from "@/lib/catalog-match";
 import type { ProveedorCatalogo } from "./page";
 
@@ -67,10 +68,16 @@ export function NuevaFacturaEditor({
   articulos,
   proveedores,
   hotelNombre,
+  facturaInicial,
 }: {
   articulos: ArticuloCatalogo[];
   proveedores: ProveedorCatalogo[];
   hotelNombre: string;
+  facturaInicial?: {
+    id: string;
+    cabecera: Cabecera;
+    lineas: Linea[];
+  } | null;
 }) {
   const [actionState, formAction] = useActionState<
     ProcesarFacturaResult | null,
@@ -81,20 +88,31 @@ export function NuevaFacturaEditor({
     null
   );
 
-  const [cabecera, setCabecera] = useState<Cabecera>({
-    proveedor_nombre: "",
-    proveedor_codigo: "",
-    nro_factura: "",
-    fecha: "",
-    moneda: "UYU",
-    centro_costo: "",
-  });
+  const [facturaId, setFacturaId] = useState<string | null>(
+    facturaInicial?.id ?? null
+  );
+  const [guardado, setGuardado] = useState<{
+    status: "idle" | "saving";
+    error?: string;
+    mensaje?: string;
+  }>({ status: "idle" });
 
-  const [lineas, setLineas] = useState<Linea[]>([
-    { ...FILA_VACIA },
-    { ...FILA_VACIA },
-    { ...FILA_VACIA },
-  ]);
+  const [cabecera, setCabecera] = useState<Cabecera>(
+    facturaInicial?.cabecera ?? {
+      proveedor_nombre: "",
+      proveedor_codigo: "",
+      nro_factura: "",
+      fecha: "",
+      moneda: "UYU",
+      centro_costo: "",
+    }
+  );
+
+  const [lineas, setLineas] = useState<Linea[]>(
+    facturaInicial?.lineas?.length
+      ? facturaInicial.lineas
+      : [{ ...FILA_VACIA }, { ...FILA_VACIA }, { ...FILA_VACIA }]
+  );
 
   const [descarga, setDescarga] = useState<{
     status: "idle" | "downloading";
@@ -158,6 +176,32 @@ export function NuevaFacturaEditor({
       centro_costo: "",
     });
     setLineas([{ ...FILA_VACIA }, { ...FILA_VACIA }, { ...FILA_VACIA }]);
+    setFacturaId(null);
+    setGuardado({ status: "idle" });
+  }
+
+  async function guardar(estado: "borrador" | "final") {
+    setGuardado({ status: "saving" });
+    const result = await guardarFactura({
+      facturaId,
+      cabecera,
+      lineas,
+      estado,
+    });
+    if (result.ok) {
+      setFacturaId(result.facturaId);
+      setGuardado({
+        status: "idle",
+        mensaje:
+          estado === "borrador"
+            ? "✓ Borrador guardado"
+            : "✓ Factura guardada como final",
+      });
+      return true;
+    } else {
+      setGuardado({ status: "idle", error: result.error });
+      return false;
+    }
   }
 
   async function descargarExcel() {
@@ -180,6 +224,9 @@ export function NuevaFacturaEditor({
     }
 
     setDescarga({ status: "downloading" });
+    // Guardar como "final" antes de descargar. Si falla, igual seguimos con el Excel
+    // (el usuario puede guardar después manualmente).
+    await guardar("final");
     try {
       const payload = {
         cabecera: {
@@ -247,7 +294,16 @@ export function NuevaFacturaEditor({
     raw: p,
   }));
 
-  const itemsArticulos = articulos.map((a) => ({
+  // Si el proveedor seleccionado es fruver, restringimos los artículos a fruver.
+  const proveedorActual = proveedores.find(
+    (p) => p.codigo_gci === cabecera.proveedor_codigo
+  );
+  const proveedorEsFruver = proveedorActual?.es_fruver === true;
+  const articulosFiltrados = proveedorEsFruver
+    ? articulos.filter((a) => a.es_fruver)
+    : articulos;
+
+  const itemsArticulos = articulosFiltrados.map((a) => ({
     label: a.nombre,
     sublabel: `${a.codigo_gci}${a.unidad ? ` · ${a.unidad}` : ""}${
       a.es_fruver ? " · fruver" : ""
@@ -387,9 +443,19 @@ export function NuevaFacturaEditor({
         </section>
 
         <section className="rounded-lg border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">
-            🧾 LÍNEAS DE LA FACTURA
-          </h2>
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+              🧾 LÍNEAS DE LA FACTURA
+            </h2>
+            {proveedorEsFruver && (
+              <span
+                className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-800"
+                title="El proveedor seleccionado es FRUVER. El catálogo de artículos se restringe a los 103 fruver."
+              >
+                🍅 FRUVER · catálogo restringido a {articulosFiltrados.length} fruver
+              </span>
+            )}
+          </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -577,7 +643,22 @@ export function NuevaFacturaEditor({
             <div className="flex items-center gap-3">
               <span className="text-xs text-zinc-500">
                 {lineas.length} línea{lineas.length === 1 ? "" : "s"}
+                {facturaId && (
+                  <span className="ml-2 text-green-700 dark:text-green-400">
+                    · guardada
+                  </span>
+                )}
               </span>
+              <button
+                type="button"
+                onClick={() => guardar("borrador")}
+                disabled={guardado.status === "saving"}
+                className="text-sm bg-zinc-700 text-white rounded px-4 py-2 font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {guardado.status === "saving"
+                  ? "Guardando..."
+                  : "💾 Guardar borrador"}
+              </button>
               <button
                 type="button"
                 onClick={descargarExcel}
@@ -590,10 +671,24 @@ export function NuevaFacturaEditor({
               </button>
             </div>
           </div>
-          {descarga.error && (
-            <p className="mt-2 text-xs text-red-600 dark:text-red-400">
-              {descarga.error}
-            </p>
+          {(descarga.error || guardado.error || guardado.mensaje) && (
+            <div className="mt-2 space-y-1">
+              {guardado.mensaje && (
+                <p className="text-xs text-green-700 dark:text-green-400">
+                  {guardado.mensaje}
+                </p>
+              )}
+              {guardado.error && (
+                <p className="text-xs text-red-600 dark:text-red-400">
+                  {guardado.error}
+                </p>
+              )}
+              {descarga.error && (
+                <p className="text-xs text-red-600 dark:text-red-400">
+                  {descarga.error}
+                </p>
+              )}
+            </div>
           )}
         </section>
       </div>

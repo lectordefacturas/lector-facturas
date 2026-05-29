@@ -18,6 +18,7 @@
 - [Ladrillo 4 done](project_ladrillo4_done.md) — COMPLETO: catálogo real (1.902 artículos) cargado a Supabase
 - [Ladrillo 5 done](project_ladrillo5_done.md) — COMPLETO: matching contra catálogo con fuse.js (badge de confianza)
 - [Ladrillo 6 done](project_ladrillo6_done.md) — COMPLETO: generar Excel GCI listo para importar al ERP. Flujo principal cerrado end-to-end
+- [Ladrillo 7 done](project_ladrillo7_done.md) — COMPLETO: 334 proveedores cargados + UI editable estilo prototipo Vale
 - [Env strategy](project_env_strategy.md) — .env.local NUNCA en repo (incidente GitGuardian 2026-05-28); key Gemini rotada
 
 ## Reference
