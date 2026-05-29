@@ -23,8 +23,6 @@ export type ProcesarFacturaResult =
       ok: true;
       cabecera: CabeceraExtraida;
       lineas: LineaConMatch[];
-      centro_costo: string;
-      hotel_nombre: string;
     }
   | { ok: false; error: string };
 
@@ -41,18 +39,6 @@ export async function procesarFactura(
   }
 
   const file = formData.get("factura");
-  const centro_costo = String(formData.get("centro_costo") ?? "").trim();
-
-  if (!centro_costo) {
-    return { ok: false, error: "El centro de costo es obligatorio." };
-  }
-  if (centro_costo.length > 16) {
-    return {
-      ok: false,
-      error: `El centro de costo no puede tener más de 16 caracteres (tiene ${centro_costo.length}).`,
-    };
-  }
-
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "No se recibió ningún archivo." };
   }
@@ -76,7 +62,8 @@ export async function procesarFactura(
 
     const { data: catalogoRaw, error: catError } = await supabase
       .from("articulos")
-      .select("id, codigo_gci, nombre, unidad, es_fruver");
+      .select("id, codigo_gci, nombre, unidad, es_fruver")
+      .range(0, 9999);
     if (catError) {
       return {
         ok: false,
@@ -84,12 +71,6 @@ export async function procesarFactura(
       };
     }
     const catalogo = (catalogoRaw ?? []) as ArticuloCatalogo[];
-
-    const { data: hoteles } = await supabase
-      .from("hoteles")
-      .select("nombre")
-      .limit(1);
-    const hotel_nombre = hoteles?.[0]?.nombre ?? "";
 
     const match = crearMatcher(catalogo);
     const lineas: LineaConMatch[] = factura.lineas.map((l) => ({
@@ -106,8 +87,6 @@ export async function procesarFactura(
         moneda: factura.moneda,
       },
       lineas,
-      centro_costo,
-      hotel_nombre,
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Error desconocido";
