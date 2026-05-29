@@ -15,6 +15,7 @@
 - [Ladrillo 1 done](project_ladrillo1_done.md) — estado final del Ladrillo 1 (DB lista)
 - [Ladrillo 2 done](project_ladrillo2_progress.md) — COMPLETO: Next.js + Vercel + Supabase con auth y RLS verificado en producción
 - [Ladrillo 3 done](project_ladrillo3_done.md) — COMPLETO: lectura de facturas con Gemini probada en producción
+- [Ladrillo 4 done](project_ladrillo4_done.md) — COMPLETO: catálogo real (1.902 artículos) cargado a Supabase
 - [Env strategy](project_env_strategy.md) — .env.local NUNCA en repo (incidente GitGuardian 2026-05-28); key Gemini rotada
 
 ## Reference
